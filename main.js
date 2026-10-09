@@ -55,8 +55,9 @@ function renderWord(entry) {
     card.style.display = "block";
     currentWord = entry;
 
-    const phoneticObj = (entry.phonetics || []).find(p => p.text) || {};
-    const audioObj = (entry.phonetics || []).find(p => p.audio && p.audio.trim()) || {};
+    const phonetics = entry.phonetics || []; // Default to empty array
+    const phoneticObj = phonetics.find(p => p.text) || {};
+    const audioObj = phonetics.find(p => p.audio && p.audio.trim()) || {};
     const phonetic = phoneticObj.text || "";
     let audioUrl = audioObj.audio || "";
 
