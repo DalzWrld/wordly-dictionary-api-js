@@ -50,6 +50,38 @@ async function searchWord() {
     }
 }
 
+async function fetchIPA(word) {
+    // Fetch raw wikitext from the English Wiktionary
+    const url = `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(word)}&prop=wikitext&format=json&origin=*`;
+    
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        // If the page doesn't exist, return empty
+        if (!data.parse || !data.parse.wikitext) return [];
+        
+        const wikitext = data.parse.wikitext["*"];
+        
+        // Extract IPA from common templates
+        // Matches {{IPA|en|/.../}} or {{IPA|en|[...]}}
+        const ipaRegex = /\{\{IPA\|en\|([^}]+)\}\}/g;
+        const matches = [...wikitext.matchAll(ipaRegex)];
+        
+        // Clean up: split by pipe, remove tags, deduplicate
+        const ipas = matches
+            .map(m => m[1].split('|')[0].trim())  // Take first argument
+            .filter(ipa => ipa && (ipa.startsWith('/') || ipa.startsWith('[')))
+            .filter((v, i, a) => a.indexOf(v) === i);  // Deduplicate
+        
+        return ipas;
+        
+    } catch (error) {
+        console.warn("Could not fetch IPA:", error);
+        return [];  // Fail silently — phonetics are optional
+    }
+}
+
 function renderWord(entry) {
     const card = document.getElementById("result-card");
     card.style.display = "block";
