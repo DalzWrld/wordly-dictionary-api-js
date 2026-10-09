@@ -1,6 +1,6 @@
 let favorites = JSON.parse(localStorage.getItem("fav-words") || "[]");
 
-const API = "https://api.dictionaryapi.dev/api/v2/entries/en/";
+const API = "https://en.wiktionary.org/api/rest_v1/page/definition/";
 
 const searchInput = document.getElementById("search-input");
 const searchBtn = document.getElementById("search-btn");
