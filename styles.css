@@ -505,10 +505,11 @@ footer {
     background: var(--main-background-color);
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     font-family: var(--body-font-family);
     color: var(--muted-text-color);
     height: 40px;
+    font-size: 12px;
 }
 
 footer a {

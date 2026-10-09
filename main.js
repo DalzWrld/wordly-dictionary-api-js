@@ -357,5 +357,7 @@ function toast(msg) {
     , 2400);
 }
 
+document.getElementById("footer-year").textContent = new Date().getFullYear();
+
 updateFavBadge();
 renderFavWords();
