@@ -58,6 +58,9 @@ async function searchWord() {
             renderWord(englishEntry);
         }, 1000);
 
+        const normalized = normalizeWiktionary(query, data, ipas);
+        renderWord(normalized);
+
     } catch (error) {
         console.error("Error fetching your word:", error);
         showError("Something went wrong. Please try again later.");
@@ -96,7 +99,38 @@ async function fetchIPA(word) {
     }
 }
 
+function normalizeWiktionary(word, wiktionaryResponse, ipas) {
+    const englishEntries = wiktionaryResponse.en || [];
+    
+    // Wiktionary groups by part of speech — flatten to your expected shape
+    const meanings = englishEntries
+        .filter(entry => entry.partOfSpeech)
+        .map(entry => ({
+            partOfSpeech: entry.partOfSpeech.toLowerCase(),
+            definitions: (entry.definitions || []).map(d => ({
+                definition: stripHtml(d.definition || ""),
+                example: stripHtml(d.examples?.[0] || ""),
+            })),
+            synonyms: [],
+            antonyms: [],
+        }));
+    
+    return {
+        word: word,
+        phonetics: ipas.map(ipa => ({ text: ipa })),
+        meanings: meanings,
+        sourceUrls: [`https://en.wiktionary.org/wiki/${encodeURIComponent(word)}`],
+    };
+}
+
+function stripHtml(html) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+}
+
 function renderWord(entry) {
+    console.log("RENDERING:", entry);
     const card = document.getElementById("result-card");
     card.style.display = "block";
     currentWord = entry;
