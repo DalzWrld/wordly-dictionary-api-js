@@ -23,42 +23,31 @@ async function searchWord() {
     resultCard.innerHTML = `Searching for ${query}`;
 
     try {
-        // 1. Fetch definitions and IPA in parallel
         const [defResponse, ipas] = await Promise.all([
             fetch(API + encodeURIComponent(query)),
             fetchIPA(query)
         ]);
 
-        // 2. Check definitions response
         if (!defResponse.ok) {
             throw new Error(`HTTP error! Status: ${defResponse.status}`);
         }
         const data = await defResponse.json();
 
-        if (!data || data.length === 0) {
+        if (!data || Object.keys(data).length === 0) {
             showError(`No results were found for <strong>"${query}"</strong>. Please try again`);
             return;
         }
 
-        // 3. Merge IPA into the entry object
-        // The Wiktionary REST API returns an object keyed by language ("en").
-        // We need to pick the English entry.
-        const englishEntry = data.en ? data.en[0] : null;
-        
-        if (!englishEntry) {
-            showError(`No English definition found for "${query}".`);
+        // Normalize first
+        const normalized = normalizeWiktionary(query, data, ipas);
+
+        // THEN check if there's anything useful to render
+        if (!normalized.meanings || normalized.meanings.length === 0) {
+            showError(`No English definition found for <strong>"${query}"</strong>.`);
             return;
         }
 
-        // 4. Attach IPA to the entry
-        englishEntry.phonetics = ipas.map(ipa => ({ text: ipa }));
-
-        // 5. Render
-        setTimeout(() => {
-            renderWord(englishEntry);
-        }, 1000);
-
-        const normalized = normalizeWiktionary(query, data, ipas);
+        // Render the good data
         renderWord(normalized);
 
     } catch (error) {
@@ -122,6 +111,7 @@ function normalizeWiktionary(word, wiktionaryResponse, ipas) {
         sourceUrls: [`https://en.wiktionary.org/wiki/${encodeURIComponent(word)}`],
     };
 }
+
 
 function stripHtml(html) {
     const tmp = document.createElement("div");
