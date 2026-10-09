@@ -17,36 +17,50 @@ searchInput.addEventListener("keydown", e => {
 
 async function searchWord() {
     const query = searchInput.value.trim();
-
     if (!query) return;
 
     clearError();
     resultCard.innerHTML = `Searching for ${query}`;
 
-    resultCard.style.display = "none";
-
     try {
-        const response = await fetch(API + encodeURIComponent(query), {
-            method: "GET"
-        });
+        // 1. Fetch definitions and IPA in parallel
+        const [defResponse, ipas] = await Promise.all([
+            fetch(API + encodeURIComponent(query)),
+            fetchIPA(query)
+        ]);
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+        // 2. Check definitions response
+        if (!defResponse.ok) {
+            throw new Error(`HTTP error! Status: ${defResponse.status}`);
         }
-
-        const data = await response.json();
+        const data = await defResponse.json();
 
         if (!data || data.length === 0) {
             showError(`No results were found for <strong>"${query}"</strong>. Please try again`);
             return;
         }
 
+        // 3. Merge IPA into the entry object
+        // The Wiktionary REST API returns an object keyed by language ("en").
+        // We need to pick the English entry.
+        const englishEntry = data.en ? data.en[0] : null;
+        
+        if (!englishEntry) {
+            showError(`No English definition found for "${query}".`);
+            return;
+        }
+
+        // 4. Attach IPA to the entry
+        englishEntry.phonetics = ipas.map(ipa => ({ text: ipa }));
+
+        // 5. Render
         setTimeout(() => {
-            renderWord(data[0]);
+            renderWord(englishEntry);
         }, 1000);
+
     } catch (error) {
         console.error("Error fetching your word:", error);
-        showError("Something went wrong. Please try again later.")
+        showError("Something went wrong. Please try again later.");
     }
 }
 
