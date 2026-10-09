@@ -15,18 +15,30 @@ searchInput.addEventListener("keydown", e => {
     if (e.key === "Enter") searchWord();
 });
 
+let searchId = 0;
+
 async function searchWord() {
     const query = searchInput.value.trim();
     if (!query) return;
 
+    const thisSearch = ++searchId;
     clearError();
-    resultCard.innerHTML = `Searching for ${query}`;
+    resultCard.style.display = "block";  // <-- add this
+    resultCard.innerHTML = `
+        <div class="loader">
+            <div class="loader-spinner"></div>
+            <p class="loader-text">Searching for <strong>${query}</strong>…</p>
+        </div>
+    `;
 
     try {
         const [defResponse, ipas] = await Promise.all([
             fetch(API + encodeURIComponent(query)),
             fetchIPA(query)
         ]);
+
+        // If another search started while we were waiting, bail out
+        if (thisSearch !== searchId) return;
 
         if (!defResponse.ok) {
             throw new Error(`HTTP error! Status: ${defResponse.status}`);
@@ -51,6 +63,7 @@ async function searchWord() {
         renderWord(normalized);
 
     } catch (error) {
+        if (thisSearch !== searchId) return;  // also bail on errors
         console.error("Error fetching your word:", error);
         showError("Something went wrong. Please try again later.");
     }
